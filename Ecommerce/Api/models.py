@@ -1,7 +1,10 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
 
 # Create your models here.
+User=get_user_model()
 
 class CustomUser(AbstractUser):
     email=models.EmailField(unique=True)
@@ -34,10 +37,30 @@ class cart(models.Model):
     def __str__(self):
         return self.cart_id
 
-
 class cart_item(models.Model):
     cart=models.ForeignKey(cart,on_delete=models.CASCADE,related_name="cart_items")
     product=models.ForeignKey(Product,on_delete=models.CASCADE,related_name="products")
     quantity=models.IntegerField(default=1)
     def __str__(self):
-        return f"{self.quentity} X {self.product} in cart {self.cart.cart_id}"
+        return f"{self.quantity} X {self.product} in cart {self.cart.cart_id}"
+
+class Review(models.Model):
+    rating_choices=[
+        (1,"Poor"),
+        (2,"Fair"),
+        (3,"Good"),
+        (4,"Very Good"),
+        (5, "Excellent")
+    ]
+    user=models.ForeignKey(settings.AUTH.USER_MODEL, on_delete=models.CASCADE, related_name="reviews")
+    product=models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reviews")
+    rating=models.PositiveIntegerField(choices=rating_choices)
+    review=models.TextField()
+    created_on=models.DateTimeField(auto_now_add=True)
+    updated_on=models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.user}'s review on {self.product.name}"
+    class Meta:
+        unique_together=["user","product"]
+        ordering=["-created"]
