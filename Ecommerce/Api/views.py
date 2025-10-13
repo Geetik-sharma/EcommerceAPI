@@ -93,12 +93,14 @@ class Update_cartitem_Quantity(APIView):
 class addreview(APIView):
     def post(self,request):
         product_id=request.data.get("product_id")
-        email=request.data.get("email_id")
+        email_id=request.data.get("email_id")
         rating=request.data.get("rating")
         review_text=request.data.get("review")
+        print(product_id,email_id ,rating,review_text)
 
         product=Product.objects.get(id=product_id)
-        user=User.objects.get(email=email)
+        user, created=User.objects.get_or_create(email=email_id, defaults={"username":email_id.split("@")[0]})
+        
 
         review=Review.objects.create(product=product, user=user, rating=rating, review=review_text)
         serializer=Review_Serializer(review)

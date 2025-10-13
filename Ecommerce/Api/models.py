@@ -4,8 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth import get_user_model
 
 # Create your models here.
-User=get_user_model()
-
 class CustomUser(AbstractUser):
     email=models.EmailField(unique=True)
     profile_picture_url=models.URLField(blank=True,null=True)
@@ -52,7 +50,7 @@ class Review(models.Model):
         (4,"Very Good"),
         (5, "Excellent")
     ]
-    user=models.ForeignKey(settings.AUTH.USER_MODEL, on_delete=models.CASCADE, related_name="reviews")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviews")
     product=models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reviews")
     rating=models.PositiveIntegerField(choices=rating_choices)
     review=models.TextField()
@@ -60,7 +58,7 @@ class Review(models.Model):
     updated_on=models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.user}'s review on {self.product.name}"
+        return f"{self.user.username}'s review on {self.product.name}"
     class Meta:
         unique_together=["user","product"]
-        ordering=["-created"]
+        ordering=["-created_on"]
