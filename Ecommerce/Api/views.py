@@ -1,10 +1,10 @@
 from django.shortcuts import render
-from .Serializers import Product_Serializer, Category_Serializer, Product_Detail_serializer,Category_Detail_Serializer,CartSerializer, Cart_Item_Serializer,Review_Serializer
+from .Serializers import Product_Serializer, Category_Serializer, Product_Detail_serializer,Category_Detail_Serializer,CartSerializer, Cart_Item_Serializer,Review_Serializer, Wishlist_Serializer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import mixins,generics,viewsets
 from rest_framework.decorators import api_view
-from .models import Product,Category,cart,cart_item,Review
+from .models import Product,Category,cart,cart_item,Review,Wishlist
 from rest_framework import status
 from django.http import Http404
 from django.contrib.auth import get_user_model
@@ -79,17 +79,21 @@ class Cart_detail(APIView):
         return Response(serializer.data, status=status.HTTP_302_FOUND)
 
 class Update_cartitem_Quantity(APIView):
-    def put(self,request):
-        cartitem_id=request.data.get("cartitem_id")
+    def put(self,request,pk):
         quantity=int(request.data.get("quantity"))
 
-        cartitem=cart_item.objects.get(id=cartitem_id)
+        cartitem=cart_item.objects.get(id=pk)
         cartitem.quantity=quantity
         cartitem.save()
 
         serializer=Cart_Item_Serializer(cartitem)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
+    
+class Cart_item_delete(APIView):
+    def delete(self, request, pk):
+        cart_item.objects.get(id=pk).delete()
+        return Response (status=status.HTTP_204_NO_CONTENT)
+
 class addreview(APIView):
     def post(self,request):
         product_id=request.data.get("product_id")
@@ -106,3 +110,45 @@ class addreview(APIView):
         serializer=Review_Serializer(review)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class Update_review(APIView):
+    def check(self,pk):
+        try:
+            return Review.objects.get(id=pk)
+        except Review.DoesNotExist:
+            raise Http404
+    def get(self,request,pk):
+        serializer=Review_Serializer(self.check(pk))
+        return Response(serializer.data,status=status.HTTP_302_FOUND)
+    def put(self,request,pk):
+        review=self.check(pk)
+        new_review=request.data.get("review") or request.query_params.get("review")
+        new_rating=request.data.get("rating") or request.query_params.get("rating")
+
+        review.review=new_review
+        review.rating=new_rating
+        review.save()
+        serializer=Review_Serializer(review)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+    
+    def delete(self,request,pk):
+        self.check(pk).delete()
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+class add_wishlist(APIView):
+    def post(self,request):
+        email=request.data.get("email")
+        product_id=request.data.get("product_id")
+
+        user=User.objects.get(email=email)
+        product=Product.objects.get(id=product_id)
+
+        wishlist=Wishlist.objects.filter(user=user, product=product)
+        if(wishlist):
+            wishlist.delete()
+            return Response("deleted succesfully",status=status.HTTP_204_NO_CONTENT)
+        new_wishlist=Wishlist.objects.create(user=user, product=product)
+        new_wishlist.save()
+        serializer=Wishlist_Serializer(new_wishlist)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
