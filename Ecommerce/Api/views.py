@@ -8,11 +8,12 @@ from .models import Product,Category,cart,cart_item,Review,Wishlist
 from rest_framework import status
 from django.http import Http404
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 User=get_user_model()
 # Create your views here.
 
-class category(APIView):
+class categorys(APIView):
     def get(self,request):
         cat=Category.objects.all()
         serializer=Category_Detail_Serializer(cat,many=True)
@@ -152,3 +153,13 @@ class add_wishlist(APIView):
         serializer=Wishlist_Serializer(new_wishlist)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+class Search_product(APIView):
+    def get(self,request):
+        query=request.query_params.get("query")
+        print (query)
+        if not query:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        prod = Product.objects.filter(Q(name__icontains=query) | Q(description__icontains=query) | Q(category__name__icontains=query))
+        print(prod)
+        serializer=Product_Serializer(prod,many=True)
+        return Response(serializer.data,status=status.HTTP_302_FOUND)
